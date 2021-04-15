@@ -1,0 +1,32 @@
+library(tidyverse)
+library(tidyr)
+library(openxlsx)
+library(readxl)
+
+setwd("C:/Users/15183/Documents/Spring_data_2021/4-7-21_1384_PNHS_on/Cali") #where my data file is
+vigene_data <- read.delim(file="Montage_100ms.spots.txt", sep = "\t", 
+                          header = TRUE, skip = 15)    #my data file
+
+
+process_data <- function(df, chip){     # Put data for "df" and a chip number for "chip", function to take thickness data for 1 chip of choice
+  processed_df <- df %>%
+    filter(Main_Column == chip) %>%
+    select(thickness_median_total) %>%
+    as.data.frame()
+  
+  return(processed_df)
+}
+
+wb <- createWorkbook()   #creates excel sheet
+addWorksheet(wb, "data") #name sheet 
+ 
+convert_df_matrix <- function(df, chip){   #function to make data into matrix it originally was
+  new_vigene_data <- process_data(df, chip)
+  matrix_new <- matrix(new_vigene_data$thickness_median_total, nrow = 10, ncol = 9, byrow = TRUE)
+  writeData(wb, "data", matrix_new, startRow = (chip*12), startCol = 2)
+  
+  return(matrix_new)
+}
+
+lapply(c(1,2,3,4,5,6,7,8,9), convert_df_matrix, df = vigene_data) # get matrix for all the chips you ran
+saveWorkbook(wb, file = "Cali_4-7-21.xlsx")  #write excel sheet to folder with your matrices
