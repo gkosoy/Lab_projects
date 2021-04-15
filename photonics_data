@@ -1,0 +1,58 @@
+library(pbm)
+library(ggplot)
+library(readxl)
+library(dplyr)
+library(tidyverse)
+
+
+setwd("C:/Users/15183/Documents/Spring_data_2021/Joes_stuff") #location of your files
+data <- read_xlsx("IL17_kinetics_association.xlsx") #name of your redshift data file
+data_2 <- read_xlsx("Conc_vs_time_photonics.xlsx") %>%  #name of your concentration file
+  filter(row_number() %% 70 == 1) #filter by what your redshift file time points are 
+data <- data %>% #add your concentration data to first data set
+  add_column(data_2[0:81,])
+rmax = max(data$redshift)
+data$redshift<-data$redshift-data$redshift[1]
+t0 = max(data$Time)
+
+
+# Plot the raw data and save it
+ggplot() + 
+  geom_point(data=data, aes(x=Time, y=redshift), size=1)
+
+ggsave("originaldata.png")
+
+# Use a nonlinear least squares fit to approximate the Kon and Koff
+fit = nls(redshift ~ binding1to1(data$Time,t0=t0,conc=data$`CG (mol/L)`,kon,koff,rmax=rmax),
+          data = data,
+          start = c(kon=5e6,koff=1e-2))
+
+# See what the fitted parameters are
+summary(fit)
+
+# Generate a curve using the fitted parameters
+response <- binding1to1(data$Time,t0=t0,conc=data$`CG (mol/L)`,
+                        coef(fit)["kon"],
+                        coef(fit)["koff"],
+                        rmax=rmax)
+
+#graph your data and fit
+####start####
+# Plot the normalised data and save
+ggplot()+
+  geom_point(data=data, aes(x=Time, y=redshift), size=1)+
+  geom_line(aes(x=data$Time, y=response), color="red")+
+  ggtitle(paste("Antibody-Cytokine"))+
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(plot.title=element_text(size=16))+
+  theme(axis.title.x = element_text(colour = "royalblue4", size =15)) + theme(axis.title.y = element_text(colour = "royalblue4", size =15)) +
+  theme(axis.text.x= element_text(colour = "grey1", size = 14)) + theme(axis.text.y = element_text(colour = "grey1", size = 14))+
+  annotate(colour = "royalblue4", "text", size = 6, x=300, y = 30, label = paste("kon ", format(coef(fit)["kon"], scientific = TRUE, digits = 3), "\n", "Koff ", format(coef(fit)["koff"], scientific = TRUE, digits = 3)))
+####end####            
+
+ggsave("data+fit.png") #name your data file to save
+
+
+
+
+  
