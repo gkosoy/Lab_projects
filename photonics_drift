@@ -11,7 +11,7 @@ data <- data %>% #add your concentration data to first data set
   add_column(data_2[0:420,2])  ##this has 420 because your association data has 420 data points!!
 rmax = max(data$redshift)
 for_t0 <- which(data$redshift == rmax)[1]
-t0 = for_t0
+t0 = data$Time[for_t0]
 
 # Plot the raw data and save it
 ggplot() + 
